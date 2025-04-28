@@ -13,7 +13,7 @@ dotenv.config();
 
 const app: Express = express();
 const httpServer = createServer(app);
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8087;
 
 // Middleware
 app.use(
@@ -30,6 +30,9 @@ const webSocketService = new WebSocketService(httpServer);
 
 // API routes
 app.use("/api", routes);
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 // Error handling middleware (should be last)
 app.use(errorHandler);
