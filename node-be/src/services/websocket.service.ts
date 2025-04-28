@@ -44,6 +44,11 @@ export class WebSocketService {
 
       // Handle joining a specific room
       socket.on("join_room", async ({ roomId }) => {
+        // Check if socket is already in the room
+        const isInRoom = socket.rooms.has(roomId);
+        if (isInRoom) {
+          return;
+        }
         socket.join(roomId);
         // console.log(`User ${socket.data.user.id} joined room ${roomId}`);
       });
@@ -158,7 +163,7 @@ export class WebSocketService {
 
   private async addNewChatRoom(newRoom: IChatRoom, socket: any) {
     try {
-      const { participants, type, name } = newRoom;
+      const { participants, type } = newRoom;
 
       // For direct messages, check if room already exists
       if (type === "direct") {
@@ -176,7 +181,6 @@ export class WebSocketService {
       const room = new ChatRoom({
         participants,
         type,
-        name,
       });
 
       const savedRoom = await room.save();
@@ -192,36 +196,44 @@ export class WebSocketService {
               {
                 $match: {
                   $expr: {
-                    $and: [
-                      { $in: ["$userId", "$$participants"] },
-                      { $ne: ["$userId", socket.data.user.id] },
-                    ],
+                    $and: [{ $in: ["$userId", "$$participants"] }],
                   },
                 },
               },
               {
                 $project: {
                   _id: 0,
-                  name: 1,
-                  avatar: 1,
+                  userId: 1,
+                  name: "$basicProfile.name",
+                  avatar: "$basicProfile.profilePicture",
                 },
               },
             ],
-            as: "other",
-          },
-        },
-        {
-          $unwind: {
-            path: "$other",
-            preserveNullAndEmptyArrays: true,
+            as: "others",
           },
         },
       ]);
 
       socket.join(savedRoom._id.toString());
-      this.io
-        .to(savedRoom._id.toString())
-        .emit("new_room", roomWithParticipants[0]);
+      // Get the socket of the other participant and make them join the room
+      const otherParticipant = participants.find(
+        (p) => p !== socket.data.user.id
+      );
+      const otherSocket = Array.from(this.io.sockets.sockets.values()).find(
+        (s) => s.data.user.id === otherParticipant
+      );
+      const others = roomWithParticipants[0].others;
+      delete roomWithParticipants[0].others;
+      if (otherSocket) {
+        otherSocket.emit("new_room", {
+          ...roomWithParticipants[0],
+          other: others.find((o: any) => o.userId !== otherParticipant),
+        });
+      }
+      socket.emit("new_room", {
+        ...roomWithParticipants[0],
+        other: others.find((o: any) => o.userId !== socket.data.user.id),
+      });
     } catch (error) {
       console.error("Error adding new chat room:", error);
     }

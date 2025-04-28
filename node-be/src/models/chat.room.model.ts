@@ -30,10 +30,6 @@ const chatRoomSchema = new Schema({
     enum: ["direct", "group"],
     default: "direct",
   },
-  name: {
-    type: String,
-    default: "",
-  },
 });
 
 export const ChatRoom = mongoose.model<IChatRoom>("ChatRoom", chatRoomSchema);

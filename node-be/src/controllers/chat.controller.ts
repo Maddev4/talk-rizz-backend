@@ -7,7 +7,7 @@ import { Types } from "mongoose";
 export class ChatController {
   async createRoom(req: AuthenticatedRequest, res: Response) {
     try {
-      const { participants, type, name } = req.body;
+      const { participants, type } = req.body;
 
       // For direct messages, check if room already exists
       if (type === "direct") {
@@ -24,7 +24,6 @@ export class ChatController {
       const room = new ChatRoom({
         participants,
         type,
-        name,
       });
 
       await room.save().then((room) => {
@@ -74,8 +73,8 @@ export class ChatController {
               {
                 $project: {
                   _id: 0,
-                  name: 1,
-                  avatar: 1,
+                  name: "$basicProfile.name",
+                  avatar: "$basicProfile.profilePicture",
                 },
               },
             ],
@@ -85,7 +84,7 @@ export class ChatController {
         {
           $unwind: {
             path: "$other",
-            preserveNullAndEmptyArrays: true,
+            preserveNullAndEmptyArrays: false,
           },
         },
         {
@@ -105,6 +104,12 @@ export class ChatController {
       const { page = 1, limit = 50 } = req.query;
 
       console.log("roomId", roomId);
+
+      const room = await ChatRoom.findById(roomId);
+
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
 
       const messages = await ChatMessage.aggregate([
         { $match: { roomId: new Types.ObjectId(roomId) } },
