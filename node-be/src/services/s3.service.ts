@@ -17,8 +17,12 @@ const BUCKET_NAME = process.env.AWS_S3_BUCKET || "rizz-user-avatar";
 
 export const checkS3Connection = async (): Promise<boolean> => {
   try {
-    await s3.listBuckets().promise();
+    const buckets = await s3.listBuckets().promise();
     console.log("Successfully connected to S3");
+    console.log(
+      "Available buckets:",
+      buckets.Buckets?.map((b) => b.Name)
+    );
     return true;
   } catch (error) {
     console.error("Failed to connect to S3:", error);
@@ -27,10 +31,10 @@ export const checkS3Connection = async (): Promise<boolean> => {
 };
 
 // Verify connection on startup
-checkS3Connection().catch((error) => {
-  console.error("Error checking S3 connection:", error);
-  process.exit(1); // Exit if we can't connect to S3
-});
+// checkS3Connection().catch((error) => {
+//   console.error("Error checking S3 connection:", error);
+//   process.exit(1); // Exit if we can't connect to S3
+// });
 
 export const uploadToS3 = async (
   file: UploadedFile,
