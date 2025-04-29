@@ -106,6 +106,12 @@ export class WebSocketService {
         this.addNewChatRoom(room, socket);
       });
 
+      // Handle marking messages as read
+      socket.on("mark_as_read", ({ roomId }) => {
+        console.log("marking messages as read", roomId);
+        this.markMessagesAsRead(roomId, socket);
+      });
+
       // Handle disconnection
       socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.data.user.id}`);
@@ -237,5 +243,17 @@ export class WebSocketService {
     } catch (error) {
       console.error("Error adding new chat room:", error);
     }
+  }
+
+  private async markMessagesAsRead(roomId: string, socket: any) {
+    await ChatMessage.updateMany(
+      {
+        roomId,
+        senderId: { $ne: socket.data.user.id },
+        read: false,
+      },
+      { read: true }
+    );
+    this.io.to(roomId).emit("mark_as_read", { roomId });
   }
 }

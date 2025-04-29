@@ -12,6 +12,13 @@ AWS.config.update({
 const s3 = new AWS.S3();
 const BUCKET_NAME = process.env.AWS_S3_BUCKET || "talk-rizz-uploads";
 
+console.log("BUCKET_NAME", BUCKET_NAME);
+console.log("AWS_ACCESS_KEY_ID", process.env.AWS_ACCESS_KEY_ID);
+console.log("AWS_SECRET_ACCESS_KEY", process.env.AWS_SECRET_ACCESS_KEY);
+console.log("AWS_REGION", process.env.AWS_REGION);
+
+console.log("s3", s3);
+
 export const uploadToS3 = async (
   file: UploadedFile,
   path: string
