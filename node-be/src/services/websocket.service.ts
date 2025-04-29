@@ -254,6 +254,7 @@ export class WebSocketService {
       },
       { read: true }
     );
-    this.io.to(roomId).emit("message_read", { roomId });
+    // Update the room's last message
+    this.io.to(roomId).emit("message_read", roomId);
   }
 }
