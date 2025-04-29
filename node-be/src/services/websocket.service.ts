@@ -254,6 +254,6 @@ export class WebSocketService {
       },
       { read: true }
     );
-    this.io.to(roomId).emit("mark_as_read", { roomId });
+    this.io.to(roomId).emit("message_read", { roomId });
   }
 }
