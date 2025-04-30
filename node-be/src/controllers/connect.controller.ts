@@ -5,7 +5,8 @@ import Connect from "../models/connect.model";
 export class ConnectController {
   async getConnect(req: AuthenticatedRequest, res: Response) {
     try {
-      const connect = await Connect.findById(req.params.id);
+      const userId = req.user.id;
+      const connect = await Connect.findOne({ userId });
       res.status(200).json(connect);
     } catch (error) {
       res.status(500).json({ message: "Error getting connect", error });
