@@ -1,7 +1,6 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { ProfileController } from "../controllers/profile.controller";
 import { authenticateUser } from "@/middleware/auth";
-import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import fileUpload from "express-fileupload";
 
@@ -25,9 +24,11 @@ router.use(
 router.get("/", (req: Request, res: Response) =>
   profileController.getUserProfile(req as AuthenticatedRequest, res)
 );
+
 router.post("/", (req: Request, res: Response) =>
   profileController.createProfile(req as AuthenticatedRequest, res)
 );
+
 router.put("/", (req: Request, res: Response) => {
   // Parse the profile data from formData
   const profileData = JSON.parse(req.body.profile);
@@ -35,13 +36,16 @@ router.put("/", (req: Request, res: Response) => {
   console.log("profileData", profileData);
   return profileController.updateProfile(req as AuthenticatedRequest, res);
 });
+
 router.get("/match", (req: Request, res: Response) =>
   profileController.getMatchProfile(req as AuthenticatedRequest, res)
 );
+
 router.get("/others", (req: Request, res: Response) =>
   profileController.getOtherProfiles(req as AuthenticatedRequest, res)
 );
 // Premium features
+
 router.post("/premium/upgrade", (req: Request, res: Response) =>
   profileController.upgradeToPremium(req as AuthenticatedRequest, res)
 );
