@@ -17,6 +17,7 @@ const GeneralProfileSchema = new Schema<GeneralProfile>({
   friendship: { type: String },
   professional: { type: String },
   dating: { type: String },
+  general: { type: String },
 });
 
 const ProfileSchema = new Schema<ProfileDocument>(

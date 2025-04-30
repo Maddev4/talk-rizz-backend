@@ -12,6 +12,7 @@ export interface GeneralProfile {
   friendship: string;
   professional: string;
   dating: string;
+  general: string;
 }
 
 export interface PremiumFeatures {

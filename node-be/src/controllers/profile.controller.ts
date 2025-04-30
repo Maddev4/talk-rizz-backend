@@ -44,6 +44,7 @@ export class ProfileController {
           friendship: "",
           professional: "",
           dating: "",
+          general: "",
         },
       };
 
