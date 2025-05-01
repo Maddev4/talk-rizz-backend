@@ -169,13 +169,14 @@ export class WebSocketService {
 
   private async addNewChatRoom(newRoom: IChatRoom, socket: any) {
     try {
-      const { participants, type } = newRoom;
+      const { participants, type, category } = newRoom;
 
       // For direct messages, check if room already exists
       if (type === "direct") {
         const existingRoom = await ChatRoom.findOne({
           type: "direct",
           participants: { $all: participants },
+          category,
         });
 
         if (existingRoom) {
@@ -187,6 +188,7 @@ export class WebSocketService {
       const room = new ChatRoom({
         participants,
         type,
+        category,
       });
 
       const savedRoom = await room.save();

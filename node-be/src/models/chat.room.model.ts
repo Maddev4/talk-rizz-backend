@@ -8,6 +8,7 @@ export interface IChatRoom extends Document {
   lastActivity: Date;
   type: "direct" | "group";
   name?: string;
+  category?: string;
 }
 
 const chatRoomSchema = new Schema({
@@ -24,6 +25,10 @@ const chatRoomSchema = new Schema({
   lastActivity: {
     type: Date,
     default: Date.now,
+  },
+  category: {
+    type: String,
+    default: "User Assistant",
   },
   type: {
     type: String,

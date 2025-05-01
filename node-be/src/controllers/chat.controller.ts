@@ -7,7 +7,7 @@ import { Types } from "mongoose";
 export class ChatController {
   async createRoom(req: AuthenticatedRequest, res: Response) {
     try {
-      const { participants, type } = req.body;
+      const { participants, type, category } = req.body;
 
       // For direct messages, check if room already exists
       if (type === "direct") {
@@ -24,6 +24,7 @@ export class ChatController {
       const room = new ChatRoom({
         participants,
         type,
+        category,
       });
 
       await room.save().then((room) => {
