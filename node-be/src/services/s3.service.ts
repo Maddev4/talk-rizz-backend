@@ -43,6 +43,8 @@ export const uploadToS3 = async (
   const fileExtension = file.name.split(".").pop();
   const fileName = `${path}/${uuidv4()}.${fileExtension}`;
 
+  console.log("fileExt", fileExtension);
+
   const params = {
     Bucket: BUCKET_NAME,
     Key: fileName,
@@ -50,6 +52,8 @@ export const uploadToS3 = async (
     ContentType: file.mimetype,
     ACL: "public-read",
   };
+
+  console.log("params", params);
 
   try {
     const result = await s3.upload(params).promise();
