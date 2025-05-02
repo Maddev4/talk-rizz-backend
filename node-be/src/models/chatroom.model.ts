@@ -28,7 +28,7 @@ const chatRoomSchema = new Schema({
   },
   category: {
     type: String,
-    default: "User Assistant",
+    default: "Dating",
   },
   type: {
     type: String,

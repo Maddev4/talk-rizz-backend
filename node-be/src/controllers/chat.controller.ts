@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ChatRoom } from "../models/chat.room.model";
+import { ChatRoom } from "../models/chatroom.model";
 import { ChatMessage } from "../models/chat.model";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { Types } from "mongoose";

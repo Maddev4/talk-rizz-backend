@@ -2,7 +2,7 @@ import { Server as SocketServer } from "socket.io";
 import { Server } from "http";
 import { verifyToken } from "../middleware/auth";
 import { ChatMessage, IChatMessage } from "../models/chat.model";
-import { ChatRoom, IChatRoom } from "../models/chat.room.model";
+import { ChatRoom, IChatRoom } from "../models/chatroom.model";
 import { Types } from "mongoose";
 import { Profile } from "../models/profile.model";
 
