@@ -11,8 +11,6 @@ export class ChatbotController {
       const { mode } = req.params;
       const { page = 1, limit = 50 } = req.query;
 
-      console.log("mode", mode);
-
       let room = await ChatbotRoom.findOne({ mode });
 
       if (!room) {
@@ -20,12 +18,10 @@ export class ChatbotController {
         await ChatMessage.create({
           roomId: room._id,
           content: "Hello, how can I help you today?",
-          senderId: `${mode} - ${userId}`,
+          senderId: `${mode} - ${userId} - bot`,
           timestamp: new Date(),
         });
       }
-
-      console.log("room", room);
 
       const messages = await ChatMessage.aggregate([
         { $match: { roomId: new Types.ObjectId(room._id) } },
@@ -37,6 +33,38 @@ export class ChatbotController {
       res.json({ room, messages: messages.reverse() });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  }
+
+  async sendMessage(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id: userId } = req.user;
+      const { mode } = req.params;
+      const { content } = req.body;
+
+      const room = await ChatbotRoom.findOne({ mode });
+
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+
+      const message = await ChatMessage.create({
+        roomId: room._id,
+        content,
+        senderId: userId,
+        timestamp: new Date(),
+      });
+
+      const botMessage = await ChatMessage.create({
+        roomId: room._id,
+        content: `Hello, how can I help you today? ${content}`,
+        senderId: `${mode} - ${userId} - bot`,
+        timestamp: new Date(),
+      });
+
+      res.json({ message, botMessage });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send message" });
     }
   }
 }

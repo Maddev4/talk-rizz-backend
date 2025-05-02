@@ -15,4 +15,8 @@ router.get("/rooms/:mode/messages", (req: Request, res: Response) =>
   chatbotController.getMessages(req as AuthenticatedRequest, res)
 );
 
+router.post("/:mode/messages", (req: Request, res: Response) =>
+  chatbotController.sendMessage(req as AuthenticatedRequest, res)
+);
+
 export default router;
