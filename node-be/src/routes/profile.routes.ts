@@ -25,6 +25,10 @@ router.get("/", (req: Request, res: Response) =>
   profileController.getUserProfile(req as AuthenticatedRequest, res)
 );
 
+router.get("/:userId", (req: Request, res: Response) =>
+  profileController.getUserProfileById(req as AuthenticatedRequest, res)
+);
+
 router.post("/", (req: Request, res: Response) =>
   profileController.createProfile(req as AuthenticatedRequest, res)
 );

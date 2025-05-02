@@ -20,6 +20,21 @@ export class ProfileController {
     }
   }
 
+  async getUserProfileById(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.params.userId;
+      const profile = await Profile.findOne({ userId });
+
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
   async createProfile(req: AuthenticatedRequest, res: Response) {
     try {
       let userId;
