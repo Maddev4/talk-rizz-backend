@@ -62,7 +62,7 @@ export class ChatbotController {
         timestamp: new Date(),
       });
 
-      res.json({ message, botMessage });
+      res.json(botMessage);
     } catch (error) {
       res.status(500).json({ error: "Failed to send message" });
     }
