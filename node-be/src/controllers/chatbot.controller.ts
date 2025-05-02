@@ -34,7 +34,7 @@ export class ChatbotController {
         { $limit: Number(limit) },
       ]);
 
-      res.json(messages.reverse());
+      res.json({ room, messages: messages.reverse() });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch messages" });
     }
