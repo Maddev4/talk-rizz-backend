@@ -50,7 +50,6 @@ export const uploadToS3 = async (
     Key: fileName,
     Body: file.data,
     ContentType: file.mimetype,
-    ACL: "public-read",
   };
 
   console.log("params", params);
