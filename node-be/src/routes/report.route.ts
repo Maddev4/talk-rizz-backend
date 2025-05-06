@@ -11,12 +11,12 @@ router.use((req: Request, res: Response, next: NextFunction) =>
 );
 
 // Create a new report
-router.post("/", (req: Request, res: Response) =>
+router.post("/:roomId/messages", (req: Request, res: Response) =>
   reportController.createReport(req as AuthenticatedRequest, res)
 );
 
 // Get reports for authenticated user
-router.get("/", (req: Request, res: Response) =>
+router.get("/:roomId/messages", (req: Request, res: Response) =>
   reportController.getReports(req as AuthenticatedRequest, res)
 );
 

@@ -6,7 +6,8 @@ class ReportController {
   async createReport(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: userId } = req.user;
-      const { roomId, reportType, reportDescription } = req.body;
+      const { roomId } = req.params;
+      const { reportType, reportDescription } = req.body;
 
       const report: IReport = new Report({
         roomId,
@@ -32,7 +33,11 @@ class ReportController {
   async getReports(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: userId } = req.user;
-      const reports: IReport[] = await Report.find({ senderId: userId })
+      const { roomId } = req.params;
+      const reports: IReport[] = await Report.find({
+        senderId: userId,
+        roomId,
+      })
         .sort({ timestamp: -1 })
         .populate("roomId", "participants");
 
