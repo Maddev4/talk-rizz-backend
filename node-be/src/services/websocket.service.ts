@@ -12,8 +12,10 @@ export class WebSocketService {
   constructor(server: Server) {
     this.io = new SocketServer(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:5173",
-        methods: ["GET", "POST"],
+        origin: "*", // Allow all origins
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow all common HTTP methods
+        credentials: true, // Allow credentials
+        allowedHeaders: ["Content-Type", "Authorization"], // Allow common headers
       },
     });
 
