@@ -8,6 +8,7 @@ export class ProfileController {
   async getUserProfile(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.id;
+      console.log("getUserProfile", userId);
       const profile = await Profile.findOne({ userId });
 
       if (!profile) {
