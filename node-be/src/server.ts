@@ -30,9 +30,6 @@ const webSocketService = new WebSocketService(httpServer);
 
 // API routes
 app.use("/api", routes);
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
 
 // Error handling middleware (should be last)
 app.use(errorHandler);
