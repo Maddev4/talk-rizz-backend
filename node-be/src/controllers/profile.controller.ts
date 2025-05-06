@@ -103,6 +103,7 @@ export class ProfileController {
 
   async getOtherProfiles(req: AuthenticatedRequest, res: Response) {
     try {
+      console.log("getOtherProfiles");
       const userId = req.user?.id;
       console.log("Searching for other profiles for userId", userId);
       const otherProfiles = await Profile.aggregate([
