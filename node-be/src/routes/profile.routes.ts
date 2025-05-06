@@ -25,6 +25,10 @@ router.get("/", (req: Request, res: Response) =>
   profileController.getUserProfile(req as AuthenticatedRequest, res)
 );
 
+router.get("/others", (req: Request, res: Response) =>
+  profileController.getOtherProfiles(req as AuthenticatedRequest, res)
+);
+
 router.get("/:userId", (req: Request, res: Response) =>
   profileController.getUserProfileById(req as AuthenticatedRequest, res)
 );
@@ -45,9 +49,6 @@ router.get("/match", (req: Request, res: Response) =>
   profileController.getMatchProfile(req as AuthenticatedRequest, res)
 );
 
-router.get("/others", (req: Request, res: Response) =>
-  profileController.getOtherProfiles(req as AuthenticatedRequest, res)
-);
 // Premium features
 
 router.post("/premium/upgrade", (req: Request, res: Response) =>
