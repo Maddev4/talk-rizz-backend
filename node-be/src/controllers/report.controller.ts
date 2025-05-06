@@ -34,9 +34,11 @@ class ReportController {
     try {
       const { id: userId } = req.user;
       const { roomId } = req.params;
+      const { reportType } = req.query;
       const reports: IReport[] = await Report.find({
         senderId: userId,
         roomId,
+        reportType: reportType as "like" | "notVibe" | "report",
       })
         .sort({ timestamp: -1 })
         .populate("roomId", "participants");
