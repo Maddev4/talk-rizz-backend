@@ -21,7 +21,8 @@ router.get("/health", (req: Request, res: Response) => {
 
 router.post("/lambda", (req: Request, res: Response) => {
   console.log("Received requests from Python backend:", req.body);
-  webSocketService.processRequests(req.body);
+  const { chatrooms } = req.body;
+  webSocketService.processRequests(chatrooms);
   res.status(200).json({
     status: `OK`,
   });

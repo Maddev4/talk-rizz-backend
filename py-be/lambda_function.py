@@ -9,7 +9,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # MongoDB connection string
-MONGO_URI = os.environ.get('MONGO_URI')
+# MONGO_URI = os.environ.get('MONGO_URI')
+MONGO_URI = "mongodb+srv://racewonder74:xlUxha1xlsbtJpJf@rizz.c3phar4.mongodb.net/test"
 
 def lambda_handler(event, context):
     """
@@ -94,7 +95,7 @@ def lambda_handler(event, context):
                 "type": "direct",
                 "category": "surpriseMe"
             }
-            chatroom = chatroomsCollection.insert_one(chatroom)
+            chatroomsCollection.insert_one(chatroom)
             processedChatrooms.append(chatroom)
 
         client.close()
@@ -103,17 +104,21 @@ def lambda_handler(event, context):
         # Make HTTP POST request to Node.js backend
         
         node_backend_url = "https://rizz-be.racewonder.cam/api/lambda"  # Update with actual URL
+
+        print(processedChatrooms)
         
-        try:
-            # Convert ObjectIds to strings for JSON serialization
-            chatrooms_json = [{
-                "_id": str(chatroom.inserted_id),
-                "participants": chatroom.participants
-            } for chatroom in processedChatrooms]
-            
+        try:            
+            # Convert ObjectId to string before serializing to JSON
+            serializable_chatrooms = []
+            for chatroom in processedChatrooms:
+                chatroom_copy = chatroom.copy()
+                if '_id' in chatroom_copy:
+                    chatroom_copy['_id'] = str(chatroom_copy['_id'])
+                serializable_chatrooms.append(chatroom_copy)
+                
             response = requests.post(
                 node_backend_url,
-                json=chatrooms_json,
+                json={"chatrooms": serializable_chatrooms},
                 headers={"Content-Type": "application/json"}
             )
             
