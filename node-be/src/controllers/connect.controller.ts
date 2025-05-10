@@ -55,9 +55,12 @@ export class ConnectController {
   async getConnectRequests(req: AuthenticatedRequest, res: Response) {
     try {
       const { requestType } = req.query;
-      const connectRequests = await ConnectRequest.find({
-        requestType,
-      });
+      const connectRequests = await ConnectRequest.find(
+        {
+          requestType,
+        },
+        { _id: 0 }
+      );
       res.status(200).json(connectRequests);
     } catch (error) {
       res
