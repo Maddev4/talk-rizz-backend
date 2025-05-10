@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from pymongo import MongoClient
 import os
+import requests
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -98,17 +99,31 @@ def lambda_handler(event, context):
 
         client.close()
 
-
+        logger.info(f"Processed {len(processedChatrooms)} chatrooms")
+        # Make HTTP POST request to Node.js backend
         
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Requests processed successfully',
-                'timestamp': current_time.isoformat(),
-                'requests_count': len(processedChatrooms),
-                'requests': processedChatrooms
-            }, default=str)  # Use default=str to handle non-serializable objects like ObjectId
-        }
+        node_backend_url = "https://rizz-be.racewonder.cam/api/lambda"  # Update with actual URL
+        
+        try:
+            # Convert ObjectIds to strings for JSON serialization
+            chatrooms_json = [{
+                "_id": str(chatroom.inserted_id),
+                "participants": chatroom.participants
+            } for chatroom in processedChatrooms]
+            
+            response = requests.post(
+                node_backend_url,
+                json=chatrooms_json,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to notify Node backend: {response.text}")
+
+            logger.info(f"Successfully notified Node backend")
+                
+        except Exception as e:
+            logger.error(f"Error notifying Node backend: {str(e)}")
         
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}")
