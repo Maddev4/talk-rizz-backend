@@ -9,8 +9,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # MongoDB connection string
-# MONGO_URI = os.environ.get('MONGO_URI')
-MONGO_URI = "mongodb+srv://racewonder74:xlUxha1xlsbtJpJf@rizz.c3phar4.mongodb.net/test"
+MONGO_URI = os.environ.get('MONGO_URI')
 
 def lambda_handler(event, context):
     """
@@ -93,7 +92,7 @@ def lambda_handler(event, context):
             chatroom = {
                 "participants": [request["userId"], randomUserId],
                 "type": "direct",
-                "category": "surpriseMe"
+                "category": "surprise-me"
             }
             chatroomsCollection.insert_one(chatroom)
             processedChatrooms.append(chatroom)
