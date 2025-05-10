@@ -263,4 +263,56 @@ export class WebSocketService {
       .to(roomId)
       .emit("message_read", { roomId, senderId: socket.data.user.id });
   }
+
+  public async processRequests(requests: any) {
+    console.log("processing requests", requests);
+    for (const request of requests) {
+      const { _id, participants } = request;
+
+      // Get participant profiles
+      const roomWithParticipants = await ChatRoom.aggregate([
+        { $match: { _id: new Types.ObjectId(_id) } },
+        {
+          $lookup: {
+            from: "profiles",
+            let: { participants: "$participants" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $in: ["$userId", "$$participants"] }],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 0,
+                  userId: 1,
+                  name: "$basicProfile.name",
+                  avatar: "$basicProfile.profilePicture",
+                },
+              },
+            ],
+            as: "others",
+          },
+        },
+      ]);
+
+      const room = roomWithParticipants[0];
+      const others = room.others;
+      delete room.others;
+      const sockets = Array.from(this.io.sockets.sockets.values()).filter((s) =>
+        participants.includes(s.data.user.id)
+      );
+
+      for (const socket of sockets) {
+        console.log("socket", socket.id);
+        socket.join(room._id.toString());
+        socket.emit("new_room", {
+          ...room,
+          other: others.find((o: any) => o.userId !== socket.data.user.id),
+        });
+      }
+    }
+  }
 }

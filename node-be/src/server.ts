@@ -27,7 +27,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize WebSocket
-const webSocketService = new WebSocketService(httpServer);
+export const webSocketService = new WebSocketService(httpServer);
 
 // API routes
 app.use("/api", routes);

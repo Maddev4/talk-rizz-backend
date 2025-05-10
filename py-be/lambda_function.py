@@ -26,25 +26,87 @@ def lambda_handler(event, context):
 
         # Select the database and collection
         db = client.get_database()  # This will use the database specified in the connection string
-        profiles_collection = db.profiles  # Replace 'profiles' with your actual collection name
+        requestsCollection = db.connectrequests  # Replace 'profiles' with your actual collection name
+        profilesCollection = db.profiles
+        chatroomsCollection = db.chatrooms
 
-        # # Fetch profiles
-        profiles = list(profiles_collection.find())
+        pendingRequests = list(requestsCollection.find({"requestType": "surpriseMe", "status": "pending"}))
         
-        logger.info(f"Processing {len(profiles)} profiles")
+        logger.info(f"Processing {len(pendingRequests)} requests")
         
-        # Process profiles
-        processed_profiles = process_profiles(profiles)
-        
+        # Process requests
+        processedChatrooms = []
+        for request in pendingRequests:
+            # Update the request with a new field 'processed' set to True
+            randomUserId = request["userId"]
+            # Find other profiles excluding the requesting user and those they already have chatrooms with
+            other_profiles = list(profilesCollection.aggregate([
+                {
+                    "$match": {"userId": {"$ne": randomUserId}}
+                },
+                {
+                    "$lookup": {
+                        "from": "chatrooms",
+                        "let": {"profileUserId": "$userId"},
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            {"$in": ["$$profileUserId", "$participants"]},
+                                            {"$in": [randomUserId, "$participants"]}
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "as": "existingChatrooms"
+                    }
+                },
+                {
+                    "$match": {
+                        "existingChatrooms": {"$size": 0}
+                    }
+                },
+                {
+                    "$project": {
+                        "existingChatrooms": 0
+                    }
+                }
+            ]))
+
+            if not other_profiles:
+                logger.info(f"No matching profiles found for user {randomUserId}")
+                continue
+
+            # Select a random profile from the available matches
+            import random
+            matched_profile = random.choice(other_profiles)
+            randomUserId = matched_profile["userId"]
+            requestsCollection.update_one(
+                {"requestType": "surpriseMe", "status": "pending", "userId": request["userId"]},
+                {'$set': {'status': 'matched', "matchedAt": datetime.now(), "matchedUserId": randomUserId}}
+            )
+            # Create a new chatroom
+            chatroom = {
+                "participants": [request["userId"], randomUserId],
+                "type": "direct",
+                "category": "surpriseMe"
+            }
+            chatroom = chatroomsCollection.insert_one(chatroom)
+            processedChatrooms.append(chatroom)
+
         client.close()
+
+
         
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'message': 'Profiles processed successfully',
+                'message': 'Requests processed successfully',
                 'timestamp': current_time.isoformat(),
-                'profiles_count': len(processed_profiles),
-                'profiles': processed_profiles
+                'requests_count': len(processedChatrooms),
+                'requests': processedChatrooms
             }, default=str)  # Use default=str to handle non-serializable objects like ObjectId
         }
         
@@ -56,19 +118,3 @@ def lambda_handler(event, context):
                 'error': str(e)
             })
         }
-
-def process_profiles(profiles):
-    """
-    Process the profiles fetched from MongoDB.
-    """
-    processed_profiles = []
-    for profile in profiles:
-        processed_profile = {
-            'name': profile.get('name', ''),
-            'age': profile.get('age', 0),
-            'bio': profile.get('bio', ''),
-            'processed_at': datetime.now().isoformat()
-        }
-        processed_profiles.append(processed_profile)
-    
-    return processed_profiles
