@@ -19,4 +19,16 @@ router.put("/", (req: Request, res: Response) =>
   connectController.updateConnect(req as AuthenticatedRequest, res)
 );
 
+router.post("/request", (req: Request, res: Response) =>
+  connectController.createConnectRequest(req as AuthenticatedRequest, res)
+);
+
+router.get("/requests", (req: Request, res: Response) =>
+  connectController.getConnectRequests(req as AuthenticatedRequest, res)
+);
+
+router.put("/requests", (req: Request, res: Response) =>
+  connectController.updateConnectRequest(req as AuthenticatedRequest, res)
+);
+
 export default router;
