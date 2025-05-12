@@ -42,11 +42,37 @@ export class ConnectController {
     try {
       const userId = req.user.id;
       const { requestType } = req.body;
+      // Find the latest connect request for this user and request type
+      const existingRequest = await ConnectRequest.findOne({
+        userId,
+        requestType,
+        status: "pending",
+      }).sort({ createdAt: -1 });
+
+      // If there's already a pending request, return it
+      if (existingRequest) {
+        const now = new Date();
+        const requestAge = now.getTime() - existingRequest.createdAt.getTime();
+        const hoursDiff = requestAge / (1000 * 60 * 60);
+
+        if (hoursDiff < 40) {
+          return res.json({
+            success: false,
+            message: `You can only send one request per 40 hours, please wait for ${
+              40 - hoursDiff
+            } hours before sending another request`,
+          });
+        }
+      }
       const connectRequest = await ConnectRequest.create({
         userId,
         requestType,
       });
-      res.status(200).json(connectRequest);
+      res.status(200).json({
+        success: true,
+        message: "Connect request sent successfully",
+        connectRequest,
+      });
     } catch (error) {
       res.status(500).json({ message: "Error sending connect request", error });
     }
