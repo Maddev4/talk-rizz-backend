@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pymongo import MongoClient
 import os
 import requests
@@ -9,7 +9,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # MongoDB connection string
-MONGO_URI = os.environ.get('MONGO_URI')
+# MONGO_URI = os.environ.get('MONGO_URI')
+MONGO_URI = "mongodb+srv://racewonder74:xlUxha1xlsbtJpJf@rizz.c3phar4.mongodb.net/test"
 
 def lambda_handler(event, context):
     """
@@ -37,13 +38,20 @@ def lambda_handler(event, context):
         
         # Process requests
         processedChatrooms = []
+        randomMatchedUsers = {}
         for request in pendingRequests:
             # Update the request with a new field 'processed' set to True
-            randomUserId = request["userId"]
+            requestedUserId = request["userId"]
+            if requestedUserId in randomMatchedUsers:
+                requestsCollection.update_one(
+                    {"requestType": "surpriseMe", "status": "pending", "userId": requestedUserId},
+                    {'$set': {'status': 'matched', "matchedAt": datetime.now(), "matchedUserId": randomMatchedUsers[requestedUserId]}}
+                )   
+                continue
             # Find other profiles excluding the requesting user and those they already have chatrooms with
             other_profiles = list(profilesCollection.aggregate([
                 {
-                    "$match": {"userId": {"$ne": randomUserId}}
+                    "$match": {"userId": {"$ne": requestedUserId}}
                 },
                 {
                     "$lookup": {
@@ -55,7 +63,7 @@ def lambda_handler(event, context):
                                     "$expr": {
                                         "$and": [
                                             {"$in": ["$$profileUserId", "$participants"]},
-                                            {"$in": [randomUserId, "$participants"]}
+                                            {"$in": [requestedUserId, "$participants"]}
                                         ]
                                     }
                                 }
@@ -70,27 +78,54 @@ def lambda_handler(event, context):
                     }
                 },
                 {
+                    "$lookup": {
+                        "from": "connectrequests",
+                        "let": {"profileUserId": "$userId"},
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            {"$eq": ["$userId", "$$profileUserId"]},
+                                            {"$eq": ["$requestType", "surpriseMe"]},
+                                            {"$eq": ["$status", "pending"]}
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "as": "connectRequest"
+                    }
+                },
+                {
+                    "$match": {
+                        "connectRequest": {"$not": {"$size": 0}}
+                    }
+                },
+                {
                     "$project": {
-                        "existingChatrooms": 0
+                        "existingChatrooms": 0,
+                        "connectRequest": 0
                     }
                 }
             ]))
 
             if not other_profiles:
-                logger.info(f"No matching profiles found for user {randomUserId}")
+                logger.info(f"No matching profiles found for user {requestedUserId}")
                 continue
 
             # Select a random profile from the available matches
             import random
             matched_profile = random.choice(other_profiles)
-            randomUserId = matched_profile["userId"]
+            matchedUserId = matched_profile["userId"]
+            randomMatchedUsers[matchedUserId] = requestedUserId
             requestsCollection.update_one(
                 {"requestType": "surpriseMe", "status": "pending", "userId": request["userId"]},
-                {'$set': {'status': 'matched', "matchedAt": datetime.now(), "matchedUserId": randomUserId}}
+                {'$set': {'status': 'matched', "matchedAt": datetime.now(), "matchedUserId": matchedUserId}}
             )
             # Create a new chatroom
             chatroom = {
-                "participants": [request["userId"], randomUserId],
+                "participants": [requestedUserId, matchedUserId],
                 "type": "direct",
                 "category": "surprise-me"
             }
@@ -105,8 +140,33 @@ def lambda_handler(event, context):
         node_backend_url = "https://rizz-be.racewonder.cam/api/lambda"  # Update with actual URL
 
         print(processedChatrooms)
+
+        # Get all userIds from processed chatrooms
+        processed_user_ids = set()
+        for chatroom in processedChatrooms:
+            processed_user_ids.update(chatroom["participants"])
+            
+        # Find pending requests that weren't matched and mark them as expired
+        unmatched_user_ids = [req["userId"] for req in pendingRequests if req["userId"] not in processed_user_ids]
         
-        try:            
+        if unmatched_user_ids:
+            forty_hours_ago = datetime.now() - timedelta(hours=40)
+            requestsCollection.update_many(
+                {
+                    "userId": {"$in": unmatched_user_ids},
+                    "status": "pending", 
+                    "requestType": "surpriseMe",
+                    "createdAt": {"$lt": forty_hours_ago}
+                },
+                {
+                    "$set": {
+                        "status": "expired"
+                    }
+                }
+            )
+            logger.info(f"Marked {len(unmatched_user_ids)} unmatched requests older than 40 hours as expired")
+        
+        try:
             # Convert ObjectId to string before serializing to JSON
             serializable_chatrooms = []
             for chatroom in processedChatrooms:
