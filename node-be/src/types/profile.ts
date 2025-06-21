@@ -25,4 +25,6 @@ export interface UserProfile {
   basicProfile: BasicProfile;
   generalProfile: GeneralProfile;
   premiumFeatures?: PremiumFeatures;
+  deviceToken?: string;
+  devicePlatform?: string;
 }

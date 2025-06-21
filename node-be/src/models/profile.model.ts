@@ -29,6 +29,8 @@ const ProfileSchema = new Schema<ProfileDocument>(
       maxMustHaves: { type: Number, default: 2 },
       maxDealBreakers: { type: Number, default: 2 },
     },
+    deviceToken: { type: String },
+    devicePlatform: { type: String },
   },
   {
     timestamps: true,

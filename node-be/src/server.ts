@@ -7,6 +7,7 @@ import { errorHandler } from "./middleware/error";
 import routes from "./routes";
 import { createServer } from "http";
 import { WebSocketService } from "./services/websocket.service";
+import admin from "./services/firebase.service";
 
 // Load environment variables
 dotenv.config();
@@ -16,15 +17,24 @@ const httpServer = createServer(app);
 const port = process.env.PORT || 8087;
 
 // Middleware
-// app.use(
-//   cors({
-//     origin: process.env.CLIENT_URL || "http://localhost:5173",
-//     credentials: true,
-//   })
-// );
-app.use(cors());
+app.use(
+  cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize FCM
+console.log("Initializing Firebase Cloud Messaging...");
+if (admin) {
+  console.log("Firebase initialized successfully");
+} else {
+  console.warn("Firebase initialization failed! Push notifications will not work.");
+}
 
 // Initialize WebSocket
 export const webSocketService = new WebSocketService(httpServer);

@@ -5,6 +5,7 @@ import { ChatMessage, IChatMessage } from "../models/chat.model";
 import { ChatRoom, IChatRoom } from "../models/chatroom.model";
 import { Types } from "mongoose";
 import { Profile } from "../models/profile.model";
+import { sendNotificationToUser } from "./firebase.service";
 
 export class WebSocketService {
   private io: SocketServer;
@@ -88,6 +89,35 @@ export class WebSocketService {
               avatar: sender?.basicProfile?.profilePicture,
             },
           });
+
+          // Get all participants in the room
+          const room = await ChatRoom.findById(messageData.roomId);
+          if (!room) {
+            return;
+          }
+
+          // Send push notifications to users who are not in the room
+          const connectedClients = await this.getClientsInRoom(messageData.roomId);
+          const connectedUsers = connectedClients.map(client => client.data.user.id);
+          
+          // For each participant who is not connected, send a push notification
+          for (const participant of room.participants) {
+            if (!connectedUsers.includes(participant) && participant !== socket.data.user.id) {
+              console.log(`Sending push notification to user ${participant}`);
+              
+              // Send push notification to the user
+              await sendNotificationToUser(
+                participant,
+                `Message from ${sender?.basicProfile?.name || 'Someone'}`,
+                newMessage.content,
+                {
+                  roomId: messageData.roomId,
+                  senderId: socket.data.user.id,
+                  messageId: newMessage._id ? newMessage._id.toString() : ''
+                }
+              );
+            }
+          }
         } catch (error) {
           console.error("Error sending message:", error);
           socket.emit("error", { message: "Failed to send message" });
@@ -119,6 +149,21 @@ export class WebSocketService {
         console.log(`User disconnected: ${socket.data.user.id}`);
       });
     });
+  }
+
+  // Helper method to get all clients in a room
+  private async getClientsInRoom(roomId: string): Promise<any[]> {
+    const socketIds = await this.io.in(roomId).allSockets();
+    const clients: any[] = [];
+    
+    for (const id of socketIds) {
+      const socket = this.io.sockets.sockets.get(id);
+      if (socket) {
+        clients.push(socket);
+      }
+    }
+    
+    return clients;
   }
 
   private async handleUserRooms(socket: any) {
@@ -234,12 +279,27 @@ export class WebSocketService {
       );
       const others = roomWithParticipants[0].others;
       delete roomWithParticipants[0].others;
+      
+      // If the other participant is online, send them the room
       if (otherSocket) {
         otherSocket.emit("new_room", {
           ...roomWithParticipants[0],
           other: others.find((o: any) => o.userId !== otherParticipant),
         });
+      } else if (otherParticipant) {
+        // If they're offline, send a push notification about the new room
+        const sender = others.find((o: any) => o.userId === socket.data.user.id);
+        await sendNotificationToUser(
+          otherParticipant,
+          `New conversation from ${sender?.name || 'Someone'}`,
+          'You have a new chat request',
+          {
+            roomId: savedRoom._id.toString(),
+            type: 'new_room'
+          }
+        );
       }
+      
       socket.emit("new_room", {
         ...roomWithParticipants[0],
         other: others.find((o: any) => o.userId !== socket.data.user.id),
@@ -305,6 +365,7 @@ export class WebSocketService {
         participants.includes(s.data.user.id)
       );
 
+      // For each online participant, send the room directly
       for (const socket of sockets) {
         console.log("socket", socket.id);
         socket.join(room._id.toString());
@@ -312,6 +373,27 @@ export class WebSocketService {
           ...room,
           other: others.find((o: any) => o.userId !== socket.data.user.id),
         });
+      }
+
+      // For offline participants, send a push notification
+      const connectedUsers = sockets.map(s => s.data.user.id);
+      for (const participant of participants) {
+        if (!connectedUsers.includes(participant)) {
+          // Find the sender info (someone other than the current participant)
+          const sender = others.find((o: any) => o.userId !== participant);
+          if (sender && sender.name) {
+            // Send a notification about the new chat request
+            await sendNotificationToUser(
+              participant,
+              `New conversation from ${sender.name}`,
+              'You have a new chat request',
+              {
+                roomId: room._id.toString(),
+                type: 'new_room'
+              }
+            );
+          }
+        }
       }
     }
   }

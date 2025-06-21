@@ -49,6 +49,11 @@ router.get("/match", (req: Request, res: Response) =>
   profileController.getMatchProfile(req as AuthenticatedRequest, res)
 );
 
+// Device registration for push notifications
+router.post("/register-device", (req: Request, res: Response) =>
+  profileController.registerDevice(req as AuthenticatedRequest, res)
+);
+
 // Premium features
 
 router.post("/premium/upgrade", (req: Request, res: Response) =>

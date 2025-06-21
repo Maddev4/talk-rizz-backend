@@ -4,6 +4,7 @@ import { UserProfile } from "../types/profile";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { uploadToS3 } from "../services/s3.service";
 import { UploadedFile } from "express-fileupload";
+
 export class ProfileController {
   async getUserProfile(req: AuthenticatedRequest, res: Response) {
     try {
@@ -202,6 +203,40 @@ export class ProfileController {
 
       res.json(updatedProfile);
     } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  async registerDevice(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { pushToken, platform } = req.body;
+
+      if (!pushToken) {
+        return res.status(400).json({ error: "Push token is required" });
+      }
+
+      console.log(`Registering device token for user ${userId}: ${pushToken} (Platform: ${platform || 'unknown'})`);
+
+      // Update the user's profile with the new device token
+      const updatedProfile = await Profile.findOneAndUpdate(
+        { userId },
+        { 
+          $set: { 
+            deviceToken: pushToken,
+            devicePlatform: platform || 'unknown'
+          } 
+        },
+        { new: true }
+      );
+
+      if (!updatedProfile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.json({ success: true, message: "Device registered successfully" });
+    } catch (error) {
+      console.error("Error registering device:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   }
