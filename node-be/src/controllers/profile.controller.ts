@@ -78,6 +78,8 @@ export class ProfileController {
       const userId = req.user?.id;
       const profileData: UserProfile = req.body;
 
+      console.log("profileData:", profileData);
+
       // Handle profile picture upload if provided
       if (req.files?.profilePicture) {
         const file = req.files.profilePicture;
@@ -89,6 +91,8 @@ export class ProfileController {
         );
         profileData.basicProfile.profilePicture = imageUrl;
       }
+
+      console.log("userId:", userId);
 
       // Update or create profile
       const updatedProfile = await Profile.findOneAndUpdate(
@@ -216,16 +220,20 @@ export class ProfileController {
         return res.status(400).json({ error: "Push token is required" });
       }
 
-      console.log(`Registering device token for user ${userId}: ${pushToken} (Platform: ${platform || 'unknown'})`);
+      console.log(
+        `Registering device token for user ${userId}: ${pushToken} (Platform: ${
+          platform || "unknown"
+        })`
+      );
 
       // Update the user's profile with the new device token
       const updatedProfile = await Profile.findOneAndUpdate(
         { userId },
-        { 
-          $set: { 
+        {
+          $set: {
             deviceToken: pushToken,
-            devicePlatform: platform || 'unknown'
-          } 
+            devicePlatform: platform || "unknown",
+          },
         },
         { new: true }
       );
