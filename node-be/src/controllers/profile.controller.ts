@@ -76,32 +76,129 @@ export class ProfileController {
   async updateProfile(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const profileData: UserProfile = req.body;
 
-      // Handle profile picture upload if provided
-      if (req.files?.profilePicture) {
-        const file = req.files.profilePicture;
-        // Check if it's an array and take the first file if it is
-        const singleFile = Array.isArray(file) ? file[0] : file;
-        const imageUrl = await uploadToS3(
-          singleFile,
-          `profile-pictures/${userId}`
-        );
-        profileData.basicProfile.profilePicture = imageUrl;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
       }
 
-      console.log("userId:", userId);
+      const profileData: UserProfile = req.body;
+
+      // Validate required fields
+      if (!profileData.basicProfile?.name?.trim()) {
+        return res.status(400).json({ error: "Profile name is required" });
+      }
+
+      console.log("ProfileController - updateProfile for userId:", userId);
+      console.log(
+        "ProfileController - received profile data:",
+        JSON.stringify(profileData, null, 2)
+      );
+      console.log("ProfileController - received files:", req.files);
+
+      // Handle profile picture upload if provided
+      let imageUrl = profileData.basicProfile.profilePicture || "";
+
+      if (req.files?.profilePicture) {
+        try {
+          const file = req.files.profilePicture;
+          // Check if it's an array and take the first file if it is
+          const singleFile = Array.isArray(file) ? file[0] : file;
+
+          // Validate file type
+          const allowedTypes = [
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ];
+          if (!allowedTypes.includes(singleFile.mimetype)) {
+            return res.status(400).json({
+              error:
+                "Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.",
+            });
+          }
+
+          // Validate file size (5MB limit)
+          if (singleFile.size > 5 * 1024 * 1024) {
+            return res.status(400).json({
+              error: "File size too large. Maximum size is 5MB.",
+            });
+          }
+
+          console.log("ProfileController - uploading image to S3:", {
+            name: singleFile.name,
+            size: singleFile.size,
+            type: singleFile.mimetype,
+          });
+
+          imageUrl = await uploadToS3(singleFile, `profile-pictures/${userId}`);
+          console.log(
+            "ProfileController - image uploaded successfully:",
+            imageUrl
+          );
+        } catch (uploadError) {
+          console.error(
+            "ProfileController - error uploading image:",
+            uploadError
+          );
+          return res.status(500).json({
+            error: "Failed to upload image. Please try again.",
+          });
+        }
+      }
+
+      // Prepare the updated profile data
+      const updatedProfileData: UserProfile = {
+        userId,
+        basicProfile: {
+          name: profileData.basicProfile.name.trim(),
+          displayName:
+            profileData.basicProfile.displayName?.trim() ||
+            profileData.basicProfile.name.trim(),
+          location: profileData.basicProfile.location?.trim() || "",
+          languages: profileData.basicProfile.languages || [],
+          birthday: profileData.basicProfile.birthday || "",
+          gender: profileData.basicProfile.gender || "",
+          profilePicture: imageUrl,
+        },
+        generalProfile: {
+          friendship: profileData.generalProfile?.friendship?.trim() || "",
+          professional: profileData.generalProfile?.professional?.trim() || "",
+          dating: profileData.generalProfile?.dating?.trim() || "",
+          general: profileData.generalProfile?.general?.trim() || "",
+        },
+        premiumFeatures: profileData.premiumFeatures || {
+          maxMustHaves: 3,
+          maxDealBreakers: 3,
+        },
+        rizzCode: profileData.rizzCode || "",
+        rizzPoint: profileData.rizzPoint || 0,
+      };
+
+      console.log(
+        "ProfileController - final profile data to save:",
+        JSON.stringify(updatedProfileData, null, 2)
+      );
 
       // Update or create profile
       const updatedProfile = await Profile.findOneAndUpdate(
         { userId },
-        { ...profileData, userId },
+        updatedProfileData,
         { new: true, upsert: true }
       );
 
+      if (!updatedProfile) {
+        return res.status(500).json({ error: "Failed to update profile" });
+      }
+
+      console.log("ProfileController - profile updated successfully");
       res.json(updatedProfile);
     } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
+      console.error("ProfileController - error in updateProfile:", error);
+      res.status(500).json({
+        error: "Internal server error. Please try again later.",
+      });
     }
   }
 

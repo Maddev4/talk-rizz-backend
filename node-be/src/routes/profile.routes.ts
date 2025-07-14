@@ -17,6 +17,7 @@ router.use(
   fileUpload({
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     abortOnLimit: true,
+    useTempFiles: false,
   })
 );
 
@@ -38,12 +39,44 @@ router.post("/", (req: Request, res: Response) =>
 );
 
 router.put("/", (req: Request, res: Response) => {
-  // Parse the profile data from formData
-  console.log("req.body:", req.body);
-  const profileData = JSON.parse(req.body?.profile || req.body);
-  req.body = profileData;
-  console.log("profileData", profileData);
-  return profileController.updateProfile(req as AuthenticatedRequest, res);
+  try {
+    console.log("Profile update request headers:", req.headers);
+    console.log(
+      "Profile update request content-type:",
+      req.headers["content-type"]
+    );
+    console.log("Profile update req.body:", req.body);
+    console.log("Profile update req.files:", req.files);
+
+    // Check if this is a FormData request (multipart/form-data)
+    const isFormData = req.headers["content-type"]?.includes(
+      "multipart/form-data"
+    );
+
+    if (isFormData && req.body.profile) {
+      // Handle FormData request - parse the profile JSON from FormData
+      try {
+        const profileData = JSON.parse(req.body.profile);
+        req.body = profileData;
+        console.log("Parsed profile data from FormData:", profileData);
+      } catch (parseError) {
+        console.error("Error parsing profile JSON from FormData:", parseError);
+        return res.status(400).json({ error: "Invalid profile data format" });
+      }
+    } else if (!isFormData) {
+      // Handle JSON request - profile data is already in req.body
+      console.log("Processing JSON request, profile data:", req.body);
+    } else {
+      // FormData request but no profile data found
+      console.error("FormData request missing profile data");
+      return res.status(400).json({ error: "Profile data is required" });
+    }
+
+    return profileController.updateProfile(req as AuthenticatedRequest, res);
+  } catch (error) {
+    console.error("Error processing profile update request:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.get("/match", (req: Request, res: Response) =>
@@ -56,7 +89,6 @@ router.post("/register-device", (req: Request, res: Response) =>
 );
 
 // Premium features
-
 router.post("/premium/upgrade", (req: Request, res: Response) =>
   profileController.upgradeToPremium(req as AuthenticatedRequest, res)
 );

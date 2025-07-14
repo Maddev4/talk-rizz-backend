@@ -5,7 +5,7 @@ export interface BasicProfile {
   languages: string[];
   birthday: string;
   gender: string;
-  profilePicture: string;
+  profilePicture?: string;
 }
 
 export interface GeneralProfile {
@@ -27,4 +27,6 @@ export interface UserProfile {
   premiumFeatures?: PremiumFeatures;
   deviceToken?: string;
   devicePlatform?: string;
+  rizzCode?: string;
+  rizzPoint?: number;
 }
