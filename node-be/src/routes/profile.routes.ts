@@ -39,6 +39,7 @@ router.post("/", (req: Request, res: Response) =>
 
 router.put("/", (req: Request, res: Response) => {
   // Parse the profile data from formData
+  console.log(req.body);
   const profileData = JSON.parse(req.body.profile);
   req.body = profileData;
   console.log("profileData", profileData);
