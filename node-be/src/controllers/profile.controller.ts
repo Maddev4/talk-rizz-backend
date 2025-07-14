@@ -78,8 +78,6 @@ export class ProfileController {
       const userId = req.user?.id;
       const profileData: UserProfile = req.body;
 
-      console.log("profileData:", profileData);
-
       // Handle profile picture upload if provided
       if (req.files?.profilePicture) {
         const file = req.files.profilePicture;
